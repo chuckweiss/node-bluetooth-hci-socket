@@ -13,7 +13,7 @@ BluetoothHciL2Socket::BluetoothHciL2Socket(BluetoothHciSocket* parent,
                                            uint8_t src_type,
                                            const bdaddr_t* bdaddr_dst,
                                            uint8_t dst_type,
-                                           uint64_t expires)
+                                           std::chrono::steady_clock::time_point expires)
     : _socket(-1), _parent(parent), _expires(expires)
 {
     uint16_t l2cid;
@@ -44,7 +44,7 @@ BluetoothHciL2Socket::BluetoothHciL2Socket(BluetoothHciSocket* parent,
 
 BluetoothHciL2Socket::~BluetoothHciL2Socket() {
   if(this->_socket != -1) disconnect();
-  if(_expires == 0) {
+  if(_expires == std::chrono::steady_clock::time_point{}) {
     this->_parent->_l2sockets_connected.erase(_l2_dst.l2_bdaddr);
   }
 }
@@ -75,12 +75,16 @@ void BluetoothHciL2Socket::disconnect() {
   this->_socket = -1;
 }
 
-void BluetoothHciL2Socket::setExpires(uint64_t expires){
+void BluetoothHciL2Socket::setExpires(std::chrono::steady_clock::time_point expires) {
   _expires = expires;
 }
 
-uint64_t BluetoothHciL2Socket::getExpires() const {
+std::chrono::steady_clock::time_point BluetoothHciL2Socket::getExpires() const {
   return _expires;
+}
+
+void BluetoothHciL2Socket::clearExpires() {
+  _expires = std::chrono::steady_clock::time_point{};
 }
 
 bool BluetoothHciL2Socket::isConnected() const {
