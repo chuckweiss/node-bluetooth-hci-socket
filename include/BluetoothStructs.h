@@ -6,7 +6,6 @@
 #include <cstring>
 #include <map>
 #include <memory>
-#include <chrono>
 #include <sys/socket.h>  // For sa_family_t
 
 // Bluetooth Protocols
@@ -52,8 +51,8 @@
 // L2CAP constants
 #define ATT_CID 4 ///< Attribute Protocol CID (Channel Identifier)
 
-// 
-#define L2_CONNECT_TIMEOUT std::chrono::minutes(1) ///< L2CAP connection timeout
+// 1 minute in nanoseconds
+#define L2_CONNECT_TIMEOUT 60000000000
 
 // HCI Device States Enumeration
 enum {

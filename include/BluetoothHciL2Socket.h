@@ -17,14 +17,14 @@ class BluetoothHciL2Socket {
    * @param src_type Source address type (public or random).
    * @param bdaddr_dst Destination Bluetooth device address.
    * @param dst_type Destination address type (public or random).
-   * @param expires Expiration time.
+   * @param expires Expiration time in milliseconds.
    */
   BluetoothHciL2Socket(BluetoothHciSocket* parent,
                        const bdaddr_t* bdaddr_src,
                        uint8_t src_type,
                        const bdaddr_t* bdaddr_dst,
                        uint8_t dst_type,
-                       std::chrono::steady_clock::time_point expires);
+                       uint64_t expires);
 
   /// Destructor
   ~BluetoothHciL2Socket();
@@ -36,23 +36,20 @@ class BluetoothHciL2Socket {
   void disconnect();
 
   /// Sets the expiration time.
-  void setExpires(std::chrono::steady_clock::time_point expires);
+  void setExpires(uint64_t expires);
 
   /// Retrieves the expiration time.
-  std::chrono::steady_clock::time_point getExpires() const;
-
-  /// Clears the expiration time.
-  void clearExpires();
+  uint64_t getExpires() const;
 
   /// Checks if the socket is connected.
   bool isConnected() const;
 
  private:
-  int _socket;                                      ///< Socket file descriptor.
-  BluetoothHciSocket* _parent;                      ///< Pointer to the parent HCI socket.
-  std::chrono::steady_clock::time_point _expires;   ///< Expiration time, or 0 if connected.
-  struct sockaddr_l2 _l2_src;                       ///< Source L2CAP address.
-  struct sockaddr_l2 _l2_dst;                       ///< Destination L2CAP address.
+  int _socket;                       ///< Socket file descriptor.
+  BluetoothHciSocket* _parent;       ///< Pointer to the parent HCI socket.
+  uint64_t _expires;                 ///< Expiration time in milliseconds, or 0 if connected.
+  struct sockaddr_l2 _l2_src;        ///< Source L2CAP address.
+  struct sockaddr_l2 _l2_dst;        ///< Destination L2CAP address.
 
   // Disable copy constructor and assignment operator
   BluetoothHciL2Socket(const BluetoothHciL2Socket&) = delete;

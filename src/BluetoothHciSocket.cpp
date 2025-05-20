@@ -3,9 +3,17 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <uv.h>
 #include <stdexcept>
+#include <chrono>
 
 #include "BluetoothHciSocket.h"
+
+uint64_t highResTimeNs() {
+  auto now = std::chrono::steady_clock::now();
+  auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+  return static_cast<uint64_t>(ns);
+}
 
 BluetoothHciSocket::BluetoothHciSocket(const Napi::CallbackInfo& info) :
   Napi::ObjectWrap<BluetoothHciSocket>(info), 
@@ -195,7 +203,7 @@ void BluetoothHciSocket::kernelDisconnectWorkArounds(char * data, int length) {
           if (it_connecting != _l2sockets_connecting.end()) {
             // Successful connection (we have a handle for the socket)
             l2socket_ptr = it_connecting->second;
-            l2socket_ptr->clearExpires();
+            l2socket_ptr->setExpires(0);
             _l2sockets_connecting.erase(it_connecting);
 
             // Move to connected sockets map
@@ -343,13 +351,13 @@ bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
         l2socket_ptr = it_connecting->second;
         l2socket_ptr->disconnect();
         l2socket_ptr->connect();
-        l2socket_ptr->setExpires(std::chrono::steady_clock::now() + L2_CONNECT_TIMEOUT);
+        l2socket_ptr->setExpires(highResTimeNs() + L2_CONNECT_TIMEOUT);
       } else {
         // Create a new L2CAP socket and initiate connection
         bdaddr_t bdaddr_src = {};
         memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
 
-        auto expires = std::chrono::steady_clock::now() + L2_CONNECT_TIMEOUT;
+        uint64_t expires = highResTimeNs() + L2_CONNECT_TIMEOUT;
 
         l2socket_ptr = std::make_shared<BluetoothHciL2Socket> (
           this, & bdaddr_src, _addressType, & bdaddr_dst, dst_type, expires);
@@ -619,7 +627,7 @@ void BluetoothHciSocket::Cleanup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();  // Get the current efnvironment
   Napi::HandleScope scope(env);  // Create a handle scope for memory management
 
-  auto now = std::chrono::steady_clock::now();
+  auto now = highResTimeNs();
 
   for (auto it = this->_l2sockets_connecting.cbegin(); it != this->_l2sockets_connecting.cend() /* not hoisted */; /* no increment */) {
     if (now < it->second->getExpires()) {
